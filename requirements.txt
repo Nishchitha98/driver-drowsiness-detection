@@ -1,0 +1,8 @@
+## Requirements / Dependencies
+- Python 3.10 (recommended) — the project was tested on Python 3.10.10  
+- Packages (install via pip): listed in requirements.txt  
+  - mediapipe  
+  - opencv-python  
+  - numpy  
+  - pygame  
+  - flask
