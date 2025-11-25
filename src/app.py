@@ -1,84 +1,120 @@
-# src/app.py
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'   # Silence TF / Mediapipe info/warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from flask import Flask, render_template, Response, jsonify
 import cv2
 import threading
+import time
+
 from drowsiness_ear import init_detector, process_frame, release_detector
 
-app = Flask(__name__,template_folder='C:/Users/nishc/OneDrive/Desktop/DRIVER DROWSINESS DETECTION/templates')
-camera_running = False
-cap = None
+app = Flask(__name__, template_folder='../templates')
+
+# Global variables
+camera = None
+stream_thread = None
+running = False
 lock = threading.Lock()
 
-def generate_frames():
-    global cap, camera_running
-    while camera_running:
-        if cap is None:
-            break
-        ret, frame = cap.read()
-        if not ret:
-            break
 
-        # Send the frame to detection function which annotates & may play alarm
+# ------------------- FRAME GENERATOR --------------------
+def frame_generator():
+    global camera, running
+
+    while running:
+        if camera is None:
+            time.sleep(0.05)
+            continue
+
+        ok, frame = camera.read()
+        if not ok:
+            continue
+
+        # process the frame
         annotated = process_frame(frame)
 
-        # encode
-        ret2, buffer = cv2.imencode('.jpg', annotated)
-        if not ret2:
+        ok2, buf = cv2.imencode('.jpg', annotated)
+        if not ok2:
             continue
-        frame_bytes = buffer.tobytes()
+
+        frame_bytes = buf.tobytes()
+
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-    # When loop ends, ensure resources cleaned here as a safeguard
+               b'Content-Type: image/jpeg\r\n\r\n' +
+               frame_bytes +
+               b'\r\n')
+
+    # cleanup
     try:
-        if cap is not None and cap.isOpened():
-            cap.release()
+        if camera:
+            camera.release()
     except:
         pass
+
     release_detector()
+    camera = None
 
-@app.route('/')
+
+# ------------------- ROUTES -----------------------------
+
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/start_camera', methods=['POST'])
+
+@app.route("/start_camera", methods=["POST"])
 def start_camera():
-    global camera_running, cap
+    global running, camera
+
     with lock:
-        if camera_running:
+        if running:
             return jsonify({"status": "already_running"})
-        # initialize detector (mediapipe, alarm, etc.)
+
+        # Start detection model
         init_detector()
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            cap = None
+
+        # (Re)open webcam
+        camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        time.sleep(0.3)  # give time to warm up
+
+        if not camera.isOpened():
+            camera = None
             return jsonify({"status": "camera_error"}), 500
-        camera_running = True
+
+        running = True
+
     return jsonify({"status": "started"})
 
-@app.route('/stop_camera', methods=['POST'])
+
+@app.route("/stop_camera", methods=["POST"])
 def stop_camera():
-    global camera_running, cap
+    global running, camera
+
     with lock:
-        if not camera_running:
+        if not running:
             return jsonify({"status": "already_stopped"})
-        camera_running = False
-        # generator will release cap; release here too for immediate effect
+
+        running = False
+
         try:
-            if cap is not None and cap.isOpened():
-                cap.release()
+            if camera is not None and camera.isOpened():
+                camera.release()
         except:
             pass
-        cap = None
+
+        camera = None
         release_detector()
+
     return jsonify({"status": "stopped"})
 
-@app.route('/video_feed')
+
+@app.route("/video_feed")
 def video_feed():
-    return Response(generate_frames(),
+    return Response(frame_generator(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+# ------------------- MAIN -----------------------------
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,91 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Driver Drowsiness Detection</title>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: #111;
-            color: #fff;
             margin: 0;
-            padding: 0;
+            background: #0d1117;
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         h1 {
-            margin-top: 30px;
+            margin-top: 20px;
+            font-size: 32px;
+            font-weight: 700;
+            color: #58a6ff;
+            letter-spacing: 1px;
         }
 
         #video-container {
-            margin-top: 20px;
+            margin-top: 30px;
+            width: 720px;
+            height: 520px;
+            border: 3px solid #58a6ff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0, 153, 255, 0.6);
         }
 
-        video, img {
-            width: 640px;
-            height: 480px;
-            border: 3px solid #00eaff;
-            border-radius: 10px;
+        #video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 20px;
         }
 
         button {
+            padding: 12px 28px;
             font-size: 18px;
-            padding: 12px 22px;
-            margin: 15px;
+            border-radius: 10px;
+            font-weight: 600;
             border: none;
-            border-radius: 8px;
             cursor: pointer;
+            color: #fff;
+            transition: 0.3s ease;
         }
-        #startBtn { background-color: #28a745; color: white; }
-        #startBtn:disabled { background-color: #1d5f2b; }
 
-        #stopBtn { background-color: #dc3545; color: white; }
-        #stopBtn:disabled { background-color: #742027; }
+        #start-btn {
+            background: #2ea043;
+        }
 
-        #status {
-            margin-top: 10px;
-            font-size: 20px;
-            color: #00eaff;
+        #start-btn:hover {
+            background: #3fb950;
+        }
+
+        #stop-btn {
+            background: #da3633;
+        }
+
+        #stop-btn:hover {
+            background: #ff4d4a;
+        }
+
+        #status-box {
+            margin-top: 20px;
+            padding: 12px 20px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            background: #161b22;
+            border-radius: 10px;
+            border: 2px solid #30363d;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
     </style>
-</head>
-<body>
-
-    <h1>Driver Drowsiness Detection</h1>
-
-    <div id="controls">
-        <button id="startBtn" onclick="startCamera()">Start Camera</button>
-        <button id="stopBtn" onclick="stopCamera()" disabled>Stop Camera</button>
-    </div>
-
-    <h2 id="status">Camera Status: Stopped</h2>
-
-    <div id="video-container">
-        <img id="videoFeed" src="" style="display:none;">
-    </div>
 
     <script>
         function startCamera() {
-            fetch('/start_camera', {method: 'POST'})
-            .then(() => {
-                document.getElementById("videoFeed").src = "/video_feed";
-                document.getElementById("videoFeed").style.display = "block";
-                document.getElementById("startBtn").disabled = true;
-                document.getElementById("stopBtn").disabled = false;
-                document.getElementById("status").innerText = "Camera Status: Running";
-            });
+            fetch("/start_camera", { method: "POST" })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === "started")
+                        document.getElementById("video-feed").src = "/video_feed";
+
+                    document.getElementById("status-box").innerHTML = "Camera: ON";
+                });
         }
 
         function stopCamera() {
-            fetch('/stop_camera', {method: 'POST'})
-            .then(() => {
-                document.getElementById("videoFeed").style.display = "none";
-                document.getElementById("videoFeed").src = "";
-                document.getElementById("startBtn").disabled = false;
-                document.getElementById("stopBtn").disabled = true;
-                document.getElementById("status").innerText = "Camera Status: Stopped";
-            });
+            fetch("/stop_camera", { method: "POST" })
+                .then(r => r.json())
+                .then(() => {
+                    document.getElementById("video-feed").src = "";
+                    document.getElementById("status-box").innerHTML = "Camera: OFF";
+                });
         }
     </script>
+</head>
+
+<body>
+
+    <h1>Driver Drowsiness Detection System</h1>
+
+    <div id="video-container">
+        <img id="video-feed"/>
+    </div>
+
+    <div id="controls">
+        <button id="start-btn" onclick="startCamera()">Start Camera</button>
+        <button id="stop-btn" onclick="stopCamera()">Stop Camera</button>
+    </div>
+
+    <div id="status-box">Camera: OFF</div>
 
 </body>
 </html>
