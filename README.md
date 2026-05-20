@@ -41,12 +41,29 @@ If EAR < threshold for N consecutive frames or head-down condition → mark as D
 Play alarm sound and display alert on the browser stream served by Flask.
 
 Repository Structure
-DRIVER_DROWSINESS_DETECTION/ ├── assets/ │
-└── alarm.wav ├── src/ │
+DRIVER_DROWSINESS_DETECTION/ ├── assets/
+
+│
+
+└── alarm.wav 
+
+├── src/ 
+
+│
+
 ├── app.py # Flask app (starts server, routes)
-├── drowsiness_ear.py # MediaPipe detection + process_frame() ├── templates/ │
+
+├── drowsiness_ear.py # MediaPipe detection + process_frame() 
+
+├── templates/ 
+
+│
+
 └── index.html
-├── README.md └── requirements.txt
+
+├── README.md
+
+└── requirements.txt
 
 Requirements / Dependencies
 Python 3.10 (recommended) — the project was tested on Python 3.10.10
